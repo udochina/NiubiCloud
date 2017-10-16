@@ -17,6 +17,7 @@ public class TestNativePage extends NativePageCreater {
 		public void Run() {
 			// TODO Auto-generated method stub
 			SESSION s = session_start();
+			header("X-XSS-Protection","1; mode=block");
 			//header("Set-Cookie","abc=abc");
 			endHeader();
 			String str = (String) SESSION.get("hello"); 
@@ -25,6 +26,10 @@ public class TestNativePage extends NativePageCreater {
 				SESSION.put("hello", "<html><body>hi,<script>document.write(document.cookie);</script></body></html>");
 			} else {
 				echo(str);
+			}
+			//((Object)null).toString();
+			if(data!=null){
+				echo(new String(data));
 			}
 			
 		}

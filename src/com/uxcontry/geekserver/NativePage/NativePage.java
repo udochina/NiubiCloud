@@ -11,12 +11,15 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import com.uxcontry.geekserver.GeekServer;
 import com.uxcontry.geekserver.ServerData.VirtualHost;
 
+/*
+ * NativePage V1.2
+ */
+
 public abstract class NativePage {
-	private static final String x_header = "X-Powered-By: NativePage/1.1";
+	private static final String x_header = "X-Powered-By: NativePage/1.2";
 	private PrintWriter pw;
 	private boolean end = false;
 	public String host,uri,referer,userAgant,cookie,method;
@@ -25,8 +28,9 @@ public abstract class NativePage {
 	public Map<String,Object> Application;
 	public SESSION SESSION;
 	private OutputStream os;
+	public byte[] data;
 	private HashMap<String,String> cookies = new HashMap<String,String>();
-	public final void call(PrintWriter pw,OutputStream os,InputStream data,String method,String  host,String uri,String userAgant,String referer,String cookie,VirtualHost vhost){
+	public final void call(PrintWriter pw,OutputStream os,byte[] data,String method,String  host,String uri,String userAgant,String referer,String cookie,VirtualHost vhost){
 		this.pw = pw;
 		this.referer = referer;
 		this.host = host;
@@ -37,9 +41,11 @@ public abstract class NativePage {
 		this.vhost = vhost;
 		this.os = os;
 		this.Application = vhost.application;
+		this.data = data;
 		parseCookie();
 		Run();
 		pw.flush();
+		data = null;
 	}
 	public final void endHeader()
 	{
@@ -51,7 +57,6 @@ public abstract class NativePage {
 			pw.println(x_header);
 			pw.println("Connection: close");
 			pw.println();
-			pw.flush();
 		}
 	}
 	public void header(String name,String value)
@@ -60,6 +65,9 @@ public abstract class NativePage {
 	}
 	public final SESSION session_start()
 	{
+		if(end){
+			return SESSION;
+		}
 		String session_id = cookies.get("SESSION");
 		String[] str = null;
 		if(session_id!=null){
@@ -72,6 +80,10 @@ public abstract class NativePage {
 		}
 		header("Set-Cookie", "SESSION="+SESSION.id+":"+SESSION.mstr+" ;HttpOnly");
 		return SESSION;
+	}
+	public final void session_destroy()
+	{
+		SESSION.clear();
 	}
 	public final boolean empty(Object o){
 		return o==null;

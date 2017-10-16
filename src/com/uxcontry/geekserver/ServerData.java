@@ -29,7 +29,6 @@ public class ServerData {
 		public String name;
 		public String root;
 		public int status = 0; 		//0正常,1关闭
-		//public int spare = 0;		//速度MB/S为单位，建议不要太小容易卡线程
 		public List<Host> host = new ArrayList<Host>();
 		public List<String> defalut = new ArrayList<String>();
 		public Map<String,String> mime = new Hashtable<String,String>();
@@ -42,5 +41,6 @@ public class ServerData {
 	}
 	public static class Host{
 		public String name,dir;
+		public boolean includeNativePage = true;
 	}
 }

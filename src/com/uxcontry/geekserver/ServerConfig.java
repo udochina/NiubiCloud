@@ -21,6 +21,7 @@ public class ServerConfig {
 	public static final int MAX_SEND_FILE = 512 * 1024 * 1024;
 	public static final int MAX_ZIP_FILE = 10 * 1024 * 1024;
 	public static final int MAX_CONNECTION_ON_10 = 50;
+	public static final int MAX_POST_DATA = 10 * 1024 * 1024;
 	public static boolean RETURN_204_NO_CONTENT = true;
 	public static boolean Enable_Cache = true;
 	public static final int check_time = 10 * 60 * 60;		//安全认证有效期
