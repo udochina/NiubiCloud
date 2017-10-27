@@ -7,19 +7,21 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import com.uxcontry.geekserver.GeekServer;
 import com.uxcontry.geekserver.ServerData.VirtualHost;
+import com.uxcontry.geekserver.Timer;
 
 /*
- * NativePage V1.2
+ * NativePage V1.4
  */
 
 public abstract class NativePage {
-	private static final String x_header = "X-Powered-By: NativePage/1.2";
+	private static final String x_header = "X-Powered-By: NativePage/1.4";
 	private PrintWriter pw;
 	private boolean end = false;
 	public String host,uri,referer,userAgant,cookie,method;
@@ -28,9 +30,11 @@ public abstract class NativePage {
 	public Map<String,Object> Application;
 	public SESSION SESSION;
 	private OutputStream os;
-	public byte[] data;
-	private HashMap<String,String> cookies = new HashMap<String,String>();
-	public final void call(PrintWriter pw,OutputStream os,byte[] data,String method,String  host,String uri,String userAgant,String referer,String cookie,VirtualHost vhost){
+	public byte[] Data;
+	public HashMap<String,String> Cookies = new HashMap<String,String>();
+	public String GET;
+	private String encode = "ASCII";
+	public final void call(PrintWriter pw,OutputStream os,byte[] data,String method,String  host,String uri,String userAgant,String referer,String cookie,String query,VirtualHost vhost){
 		this.pw = pw;
 		this.referer = referer;
 		this.host = host;
@@ -41,7 +45,8 @@ public abstract class NativePage {
 		this.vhost = vhost;
 		this.os = os;
 		this.Application = vhost.application;
-		this.data = data;
+		this.Data = data;
+		this.GET = query;
 		parseCookie();
 		Run();
 		pw.flush();
@@ -52,11 +57,12 @@ public abstract class NativePage {
 		if(!end){
 			end = true;
 			pw.println("HTTP/1.1 "+code+" "+status);
-			pw.println("Server: GeekServer/1.1");
+			pw.println(GeekServer.ServerHeader);
 			pw.print(header);
 			pw.println(x_header);
 			pw.println("Connection: close");
 			pw.println();
+			pw.flush();
 		}
 	}
 	public void header(String name,String value)
@@ -68,7 +74,7 @@ public abstract class NativePage {
 		if(end){
 			return SESSION;
 		}
-		String session_id = cookies.get("SESSION");
+		String session_id = Cookies.get("SESSION");
 		String[] str = null;
 		if(session_id!=null){
 			str = session_id.split(":");
@@ -107,18 +113,69 @@ public abstract class NativePage {
 					value += ch;
 				}
 			}
-			cookies.put(name, value);
+			Cookies.put(name, value);
 			name = value = "";
 		}
 	}
-	public String getCookie(String name){
-		return cookies.get(name);
+	public final String getCookie(String name){
+		return Cookies.get(name);
+	}
+	public final void setCharset(String charset){
+		this.encode = charset;
 	}
 	public final void echo(String str){
 		if(!end){
 			endHeader();
 		}
-		pw.println(str);
+		try {
+			os.write(str.getBytes(encode));
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			/*
+			 * 异常退出
+			 */
+			((Object)null).toString();
+		}
+	}
+	public final void echo(String str,String charset){
+		if(!end){
+			endHeader();
+		}
+		try {
+			os.write(str.getBytes(charset));
+			os.flush();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			/*
+			 * 异常退出
+			 */
+			((Object)null).toString();
+		}
+	}
+	private final String safe(String str){
+		StringBuilder output = new StringBuilder();
+		for(char c : str.toCharArray()){
+			if(c=='<'){
+				output.append("&lt;");
+			} else if(c=='>') {
+				output.append("&gt;");
+			} else if(c=='\"'){
+				output.append("&quot;");
+			} else if(c=='/') {
+				output.append("&#x2f;");
+			} else {
+				output.append(c);
+			}
+		}
+		return output.toString();
+	}
+	public final void safeEcho(String str)
+	{
+		echo(safe(str));
+	}
+	public final void safeEcho(String str,String encode)
+	{
+		echo(safe(str),encode);
 	}
 	public final void outputFile(File f) throws FileNotFoundException, IOException{
 		writeStream(os,new FileInputStream(f));
@@ -136,6 +193,19 @@ public abstract class NativePage {
 		}
 	}
 	
+	public final void setCallback(int timeout,Object obj){
+		Timer.setTimeout(new Runnable(){
+			private Object obj;
+			public Runnable init(Object obj){
+				this.obj = obj;
+				return this;
+			}
+			public void run(){
+				callback(obj);
+			}
+		}.init(obj), timeout + 1);
+	}
+	
 	public abstract void Run();
-	public abstract void callback();
+	public abstract void callback(Object obj);
 }

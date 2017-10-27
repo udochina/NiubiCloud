@@ -36,7 +36,7 @@ import com.uxcontry.geekserver.EMHTML.Maker;
 import com.uxcontry.geekserver.NativePage.NativePageCreater;
 
 /*
- * GeekServer服务器
+ * GeekServer服务器 V1.1.5
  * BY 恋空
  */
 
@@ -46,7 +46,7 @@ public class GeekServer
 	private static final String[] dangerWord = new String[]{"/.htaccess","/.rewrite","/nginx.conf","/httpd.conf"};
 	private static final String[] defalut = new String[]{"index.html","index.htm","index.smhtm"};
 	//private static final int cgi_timeout = 10 * 1000;
-	public static final String ServerHeader = "Server: GeekServer/1.1.3";
+	public static final String ServerHeader = "Server: GeekServer/1.2";
 	
 	/*
 	 * 消息队列
@@ -117,8 +117,9 @@ public class GeekServer
 		}, 15);
 	}
 	private void mime_init(){
-		mimeTable.put(".js", "text/js");
 		mimeTable.put(".css", "text/css");
+		mimeTable.put(".js", "text/x-javascript");
+		mimeTable.put(".appcache", "text/cache-manifest");
 	}
 	private void bind(int port,boolean https,int threadnum) throws Exception
 	{
@@ -127,7 +128,8 @@ public class GeekServer
 		if(!https)
 			ss = new ServerSocket(port);
 		serverSocketList.add(ss);
-		ss.setReceiveBufferSize(5000);
+		ss.setPerformancePreferences(0, 1, 2);
+		ss.setReceiveBufferSize(3000);
 		for(;i < threadnum;i++){
 			new AcceptThread(ss).start();
 		}
@@ -191,13 +193,15 @@ public class GeekServer
 				total++;
 				con10++;
 				if(s!=null){
-					IP ip = null;
-					if((ip = readIP(s.getInetAddress().getHostAddress()))!=null){
+					IP ip = readIP(s.getInetAddress().getHostAddress());
+					if(ip!=null){
 						try {
-							s.setSendBufferSize(64 * 1024);
+							s.setSendBufferSize(128 * 1024);
+							s.setReceiveBufferSize(40 * 1024);
 						} catch (SocketException e) {
 							// TODO 自动生成的 catch 块
 							onerror(e);
+							continue;
 						}
 						Connection c = new Connection();
 						c.s = s;
@@ -257,12 +261,25 @@ public class GeekServer
 	/*
 	 * 等待线程
 	 */
+	private int wait_id = 0;
 	public class WaitThread extends Thread
 	{
 		private Connection[] connections = new Connection[128];
 		private int len = 0;
 		public void run()
 		{
+			int sleep_time = 0;
+			synchronized (this) {
+				sleep_time = wait_id * 10;
+				wait_id++;
+			}
+			if(sleep_time!=0){
+				try {
+					sleep(sleep_time);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+				}
+			}
 			this.setPriority(Thread.MAX_PRIORITY);
 			for(;;){
 				try {
@@ -312,7 +329,7 @@ public class GeekServer
 							c.s.close();
 							break;
 						}
-						if(!c.tempbuffer.startsWith("Cookie: ")){
+						if(!c.tempbuffer.startsWith("Cookie: ") && !c.tempbuffer.startsWith("User-Agent: ")){
 							if(c.tempbuffer.length() >= 300){
 								c.IP.connect--;
 								connections[point] = null;
@@ -322,7 +339,7 @@ public class GeekServer
 						}
 						char ch = (char) c.s.getInputStream().read();
 						//System.out.print(ch);
-							if(ch=='\n'){
+							if(ch=='\n') {
 								if(!c.tempbuffer.endsWith("\r")){
 									c.s.getOutputStream().flush();
 									c.s.close();
@@ -330,7 +347,24 @@ public class GeekServer
 									connections[point] = null;
 									break;
 								}
+								/*
+								 * 读取完成
+								 */
 								if(c.tempbuffer.equals("\r")){
+									/*
+									 * 提前的浏览器检查
+									 */
+									if(ServerConfig.MUST_BROWSER_CHECK){
+										if(c.check_status!=2){
+											c.s.close();
+											c.IP.connect--;
+											connections[point] = null;
+											break;
+										}
+									}
+									/*
+									 * 处理请求
+									 */
 									if(waiting <= 64){
 										handlerThreadPool.execute(new HandlerThread(c));
 										connections[point] = null;
@@ -345,13 +379,18 @@ public class GeekServer
 										break;
 									}
 								} else {
+									/*
+									 * 完成一行
+									 */
+									if(c.tempbuffer.startsWith("User-Agent: ") || c.tempbuffer.startsWith("Accept: ")){
+										c.check_status++;
+									}
 									c.buffer.append(c.tempbuffer).append("\n");
 									c.tempbuffer = "";
 								}
 							} else {
 								c.tempbuffer += ch;
 							}
-							//yield();
 						}
 					yield();
 				}
@@ -374,16 +413,18 @@ public class GeekServer
 				}
 				running++;
 				//long start = System.currentTimeMillis();
+				//System.out.println(con.buffer);
 				int ret = handler();
 				//System.out.println(System.currentTimeMillis() - start);
-				con.buffer = new StringBuilder();
-				con.tempbuffer = "";
 				if(ret==0){
 					con.s.close();
 					con.IP.connect--;
 					con.header = null;
 				} else {
+					con.buffer = new StringBuilder();
+					con.tempbuffer = "";
 					con.startTime = System.currentTimeMillis();
+					con.check_status = 0;
 					waitQueue.add(con);
 					con.header = new ArrayList<Header>();
 				}
@@ -391,23 +432,26 @@ public class GeekServer
 				//System.out.println(e.getClass().getName());
 				if(!e.getClass().getName().equals("java.net.SocketException")){
 					onerror(e);
-					if(!con.s.isClosed()){
-						try {
-							PrintWriter pw = new PrintWriter(con.s.getOutputStream());
-							pw.println("HTTP/1.1 500 Internal Server Error");
-							pw.println(ServerHeader);
-							pw.println();
-							pw.flush();
-							con.s.close();
-							con.IP.connect--;
-						} catch (IOException e1) {
-							// TODO 自动生成的 catch 块
+				}
+				if(!con.s.isClosed()){
+					try {
+						PrintWriter pw = new PrintWriter(con.s.getOutputStream());
+						pw.println("HTTP/1.1 500 Internal Server Error");
+						pw.println(ServerHeader);
+						pw.println("Connection: close");
+						pw.println();
+						if(DEBUG){
+							e.printStackTrace(pw);
 						}
+						pw.flush();
+						con.s.close();
+						con.IP.connect--;
+					} catch (IOException e1) {
+						// TODO 自动生成的 catch 块
 					}
 				}
 			}
 			con = null;
-			System.gc();
 			running--;
 		}
 		private int handler() throws Exception 
@@ -505,6 +549,9 @@ public class GeekServer
 				con.header.add(h);
 			}
 			String host = header("Host");
+			if(host==null){
+				host = header("X-Online-Host");
+			}
 			if(host==null || host.trim().equals("")) {
 				return error(pw,403,"Forbidden","Host error!");
 			}
@@ -541,7 +588,11 @@ public class GeekServer
 			if(vhost.status==1){
 				return error(pw,403,"Forbidden","Host is closed!");
 			}
-			
+			if(vhost.checkBrowser){
+				if(header("User-Agent")==null || header("Accept")==null){
+					return error(pw,403,"Forbidden","Browser check failed.");
+				}
+			}
 			/*
 			 * 处理/server-bin/
 			 */
@@ -581,6 +632,13 @@ public class GeekServer
 						pw.println("Check finish,Have some error!");
 				} else if(uri.equals("/server-bin/server.js")) {
 					pw.println();
+				} else if(uri.equals("/server-bin/clearCache")){
+					if(DEBUG){
+						AllCache.clear();
+						pw.println("Finish");
+					} else {
+						pw.println("DEBUG Mode not enabled");
+					}
 				} else {
 					pw.println("It work!");
 				}
@@ -601,9 +659,12 @@ public class GeekServer
 				return 1;
 			}
 			/*
-			 * NativePage
+			 * NativePage机制
 			 */
 			NativePageCreater npc = vhost.nativePage.get(uri);
+			if(npc==null) {
+				npc = thisHost.nativePage.get(uri);
+			}
 			try{
 				if(thisHost.includeNativePage && npc!=null){
 					ByteArrayOutputStream os = new ByteArrayOutputStream();
@@ -611,25 +672,33 @@ public class GeekServer
 						if(header("Content-Length")!=null && !header("Content-Length").equals("0")){
 							long start = System.currentTimeMillis();
 							for(i = 1;i <= Integer.parseInt(header("Content-Length"));i++){
-								int i1 = -1;
+								int i1;
 								for(;(i1 = con.s.getInputStream().read())==-1;){
-									if(start - System.currentTimeMillis() >= 60 * 1000){
+									if(start - System.currentTimeMillis() >= 20 * 1000){
 										return error(pw,403,"Forbidden","Requset timeout!");
 									}
-									sleep(1);
+									sleep(2);
 								}
 								os.write(i1);
 							}
 						}
 					}
-					npc.create().call(new PrintWriter(con.s.getOutputStream()),con.s.getOutputStream(),os.toByteArray(),method , host, uri, header("User-Agant"), header("Referer"),header("Cookie"),vhost);
+					ByteArrayOutputStream bos = new ByteArrayOutputStream();
+					npc.create().call(new PrintWriter(bos),bos,os.toByteArray(),method , host, uri, header("User-Agant"), header("Referer"),header("Cookie"),query,vhost);
 					os.close();
 					os = null;
+					con.s.getOutputStream().write(bos.toByteArray());
+					con.s.getOutputStream().flush();
+					bos.close();
+					bos = null;
 					//pw.flush();
 					return 0;
 				}
 			} catch(Exception e) {
 				return error(pw,502,"Bad Gateway","There was an error in the web application.");
+			}
+			if(vhost.root==null || thisHost.dir==null){
+				return error(pw,404,"Not Found","The requested file does not exist!");
 			}
 			/*
 			 * 处理文件
@@ -670,9 +739,6 @@ public class GeekServer
 			if(!f.canRead()){
 				return error(pw,403,"Forbidden","You haven't permission to browse!");
 			}
-			if(f.getName().startsWith(".")){
-				return error(pw,403,"Forbidden","You haven't permission to browse!");
-			}
 			/*
 			 * 文件过大
 			 */
@@ -682,10 +748,10 @@ public class GeekServer
 			/*
 			 * 处理smhtm
 			 */
-			if(f.getName().endsWith(".smhtm")){
+			/*if(f.getName().endsWith(".smhtm")){
 				Maker.run(f, con.s, con.s.getOutputStream(), con.IP.address, uri, host, query, header("Set-Cookies"), header("User-Agant"), header("Referer"));
 				return 0;
-			}
+			}*/
 			/*
 			 * 生成返回头
 			 */
@@ -700,14 +766,17 @@ public class GeekServer
 					keepalive = false;
 				}
 			}
+			if(!keepalive){
+				con.s.shutdownInput();
+			}
 			/*
 			 * 检查是否一致
 			 */
+			String etag = "\""+String.format("%x", f.lastModified())+"-GEEKSERVER\"";
 			if(header("If-None-Match")!=null){
-				String etag = header("If-None-Match");
-				if(etag.equals("\""+String.format("%x", f.lastModified())+"-GEEKSERVER\"")){
-					//pw.println("Etag: \""+f.lastModified()+"-GEEKSERVER\"");
-					return  notModified(pw,"Etag: \""+String.format("%x", f.lastModified())+"-GEEKSERVER\"",keepalive);
+				String metag = header("If-None-Match");
+				if(metag.equals(etag)){
+					return  notModified(pw,"Etag: "+etag,keepalive);
 				}
 			}
 			/*
@@ -716,10 +785,13 @@ public class GeekServer
 			ByteArrayOutputStream bos = new ByteArrayOutputStream();
 			ByteArrayInputStream cache = getCache(f);
 			InputStream data = null;
+			String contentRange = null;
+			String encode = null;
 			if(header("Accept-Encoding")!=null){
 				//决定是否进行zip压缩
-				if(header("Accept-Encoding").indexOf("gzip")!=-1 && header("Ranges")==null && f.length()<=ServerConfig.MAX_ZIP_FILE && f.length()>= 512 && header("Ranges")==null){
+				if(header("Accept-Encoding").indexOf("gzip")!=-1 && header("Ranges")==null && f.length() <= ServerConfig.MAX_ZIP_FILE && f.length() >= ServerConfig.MIN_ZIP_FILE && header("Ranges")==null){
 					useZip = true;
+					encode = "gzip";
 				}
 			}
 			if(useZip){
@@ -760,10 +832,8 @@ public class GeekServer
 						data.skip(ranges[0]);
 						writeLen = ranges[1] - ranges[0];
 					}
-					pw.println("HTTP/1.1  206 Partial Content");
-					pw.println(ServerHeader);
-					pw.println("Accept-Ranges: bytes");
-					pw.println(makeContentRanges("bytes",ranges[0],(ranges.length==1)?(int)f.length():ranges[1],(int)f.length()));
+					pw.println("HTTP/1.1 206 Partial Content");
+					contentRange = makeContentRanges("bytes",ranges[0],(ranges.length==1)?(int)f.length():ranges[1],(int)f.length());
 				}
 			} else {
 				if(f.length()==0 && ServerConfig.RETURN_204_NO_CONTENT){
@@ -771,17 +841,17 @@ public class GeekServer
 				} else {
 					pw.println("HTTP/1.1 200 OK");
 				}
-				pw.println(ServerHeader);
-				pw.println("Accept-Ranges: bytes");
+				
 			}
+			pw.println(ServerHeader);
+			pw.println("Accept-Ranges: bytes");
 			pw.flush();
 			/*
 			 * 生成HTTP头
 			 */
-			
 			// encoding
 			if(useZip){
-				pw.println("Content-Encoding: gzip");
+				pw.println("Content-Encoding: "+encode);
 			}
 			// mime
 			String type = null;
@@ -801,8 +871,12 @@ public class GeekServer
 			}
 			// length
 			pw.println("Content-Length: "+writeLen);
+			//Range
+			if(contentRange!=null){
+				pw.println("Content-Range: "+contentRange);
+			}
 			//Etag
-			pw.println("Etag: \""+String.format("%x", f.lastModified())+"-GEEKSERVER\"");
+			pw.println("Etag: "+etag);
 			/*
 			 * 生成其他头
 			 */
@@ -811,7 +885,6 @@ public class GeekServer
 					pw.println("X-Memory-Cache: HIT");
 				} else {
 					pw.println("X-Memory-Cache: MISS");
-					
 				}
 			}
 			/*
@@ -822,8 +895,11 @@ public class GeekServer
 					Timer.setTimeout(new CacheAddTask(f), 2);
 				}
 			}
+			/*
+			 * 长连接
+			 */
 			if(keepalive){
-				pw.println("Keep-Alive: timeout=5, max="+con.max);
+				pw.println("Keep-Alive: timeout=10, max="+con.max);
 				con.max--;
 				pw.println("Connection: keep-alive");
 			} else {
@@ -847,12 +923,20 @@ public class GeekServer
 				}
 			}
 			con.s.getOutputStream().flush();
+			/*
+			 * 释放无用IO
+			 */
 			if(bos!=null) {
 				bos.close();
 			} else {
 				data.close();
 			}
-			//con.s.close();
+			if(cache!=null) {
+				cache.close();
+			}
+			/*
+			 * 返回是否长连接
+			 */
 			return (keepalive)?1:0;
 		}
 		public class Header{
@@ -877,7 +961,7 @@ public class GeekServer
 				pw.println(addheader);
 			}
 			if(keepalive){
-				pw.println("Keep-Alive: timeout=5, max="+con.max);
+				pw.println("Keep-Alive: timeout=10, max="+con.max);
 				con.max--;
 				pw.println("Connection: keep-alive");
 			} else {
@@ -916,7 +1000,8 @@ public class GeekServer
 		public long startTime;
 		public List<Header> header = new ArrayList<Header>();
 		public String addHeader;
-		public int max = 100;
+		public int max = ServerConfig.MAX_KEEPALIVE_CONNECTION;
+		public int check_status = 0;
 	}
 	/*
 	 * 内存缓存
@@ -960,7 +1045,6 @@ public class GeekServer
 				if(c.last == f.lastModified()){
 					return;
 				} else {
-					cacheUsed -= c.content.length;
 					AllCache.remove(c);
 					break;
 				}
@@ -1070,8 +1154,8 @@ public class GeekServer
 		       Thread.yield();
 		   }  
 		   gos.finish();
-		   gos.flush();  
-		   gos.close();  
+		   gos.flush();
+		   gos.close();
 	}
 	/*
 	 * 解析Ranges

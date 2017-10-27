@@ -28,16 +28,16 @@ public class TestNativePage extends NativePageCreater {
 				echo(str);
 			}
 			//((Object)null).toString();
-			if(data!=null){
-				echo(new String(data));
+			if(Data!=null){
+				echo(new String(Data));
 			}
-			
+			setCallback(5,"Callback come.");
 		}
 
 		@Override
-		public void callback() {
+		public void callback(Object obj) {
 			// TODO Auto-generated method stub
-			
+			System.out.println(obj);
 		}
 	}
 

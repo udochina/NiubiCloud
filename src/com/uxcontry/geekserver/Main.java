@@ -1,10 +1,15 @@
 package com.uxcontry.geekserver;
 
-import javax.net.ssl.SSLServerSocket;
-
 import com.uxcontry.geekserver.ServerData.Host;
 import com.uxcontry.geekserver.ServerData.VirtualHost;
 import com.uxcontry.geekserver.debug.TestNativePage;
+
+/*
+ * 调试用的启动方法
+ * 调试方法：
+ * 1.给hosts添加127.0.0.1 wwwtest.com
+ * 2.把内容文件放到D:\wwwtest下
+ */
 
 public class Main {
 	public static GeekServer server;

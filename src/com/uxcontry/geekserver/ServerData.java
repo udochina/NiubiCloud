@@ -37,10 +37,12 @@ public class ServerData {
 		public SESSIONManager session = new SESSIONManager();
 		public Map<String,String> redirect = new HashMap<String,String>();
 		public Map<String, Object> application = new HashMap<String,Object>();
+		public boolean checkBrowser = true;
 		
 	}
 	public static class Host{
 		public String name,dir;
 		public boolean includeNativePage = true;
+		public Map<String,NativePageCreater> nativePage = new Hashtable<String,NativePageCreater>();
 	}
 }
