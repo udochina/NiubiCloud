@@ -21,6 +21,9 @@ public class TestNativePage extends NativePageCreater {
 			//header("Set-Cookie","abc=abc");
 			endHeader();
 			String str = (String) SESSION.get("hello"); 
+			if(GET.equals("clear")){
+				session_destroy();
+			}
 			if(str==null){
 				echo("Hello!");
 				SESSION.put("hello", "<html><body>hi,<script>document.write(document.cookie);</script></body></html>");

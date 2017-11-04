@@ -36,17 +36,16 @@ import com.uxcontry.geekserver.EMHTML.Maker;
 import com.uxcontry.geekserver.NativePage.NativePageCreater;
 
 /*
- * GeekServer服务器 V1.1.5
+ * GeekServer服务器 V1.6
  * BY 恋空
  */
 
 public class GeekServer 
 {
-	public static final boolean DEBUG = true;
-	private static final String[] dangerWord = new String[]{"/.htaccess","/.rewrite","/nginx.conf","/httpd.conf"};
-	private static final String[] defalut = new String[]{"index.html","index.htm","index.smhtm"};
-	//private static final int cgi_timeout = 10 * 1000;
-	public static final String ServerHeader = "Server: GeekServer/1.2";
+	public static final boolean DEBUG = false;
+	private static final String[] dangerWord = new String[]{"/.htaccess","/.rewrite","/nginx.conf","/httpd.conf","/.control"};
+	private static final String[] defalut = new String[]{"index.html","index.htm","defalut.html","defalut.htm"};
+	public static final String ServerHeader = "Server: GeekServer/1.6";
 	
 	/*
 	 * 消息队列
@@ -69,7 +68,7 @@ public class GeekServer
 	/*
 	 * IP记录，后期改成分段存储
 	 */
-	private List<IP> IP = new ArrayList<IP>(100);
+	private List<IP> IP = new ArrayList<IP>();
 	/*
 	 * 内存缓存
 	 */
@@ -82,14 +81,14 @@ public class GeekServer
 	 * 10秒连接数
 	 *  超过50就触发CC保护模块
 	 */
-	private int con10 = 0;
+	private  int con10 = 0;
 	private int running = 0;
 	private int waiting = 0;
 	private List<ServerSocket> serverSocketList = new ArrayList<ServerSocket>();
+	private String XKey = "";
 	// 变量区结束
 	
 	public GeekServer(){
-		
 	}
 	public void init()
 	{
@@ -98,12 +97,16 @@ public class GeekServer
 		for(;i<10;i++){
 			new WaitThread().start();
 		}
+		XKey = String.format("%x",System.currentTimeMillis() % 10000 + System.nanoTime());
 		Runtime.getRuntime().addShutdownHook(new destroyThread());
 		Timer.setInterval(new Runnable(){
 			@Override
 			public void run() {
 				// TODO Auto-generated method stub
-				con10 = 0;
+				synchronized(GeekServer.this){
+					con10 = 0;
+				}
+				XKey = String.format("%x",System.currentTimeMillis() % 10000 + System.nanoTime());
 			}
 			
 		}, 10);
@@ -112,8 +115,12 @@ public class GeekServer
 			public void run() {
 				// TODO Auto-generated method stub
 				System.gc();
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+				}
 			}
-			
 		}, 15);
 	}
 	private void mime_init(){
@@ -207,7 +214,9 @@ public class GeekServer
 						c.s = s;
 						c.IP = ip;
 						c.startTime = System.currentTimeMillis();
-						c.IP.connect++;
+						synchronized(c.IP){
+							c.IP.connect++;
+						}
 						waitQueue.add(c);
 					} else {
 						try {
@@ -224,7 +233,7 @@ public class GeekServer
 	/*
 	 * 查找IP
 	 */
-	public IP readIP(String address){
+	public synchronized IP readIP(String address){
 		for(String s : disconnectIP){
 			if(s!=null){
 				if(s.equals(address)){
@@ -236,7 +245,7 @@ public class GeekServer
 		for(Object i : IP.toArray()){
 			if(i!=null){
 				if(((IP)i).address.equals(address)){
-					ip = (IP) i;
+					ip = (IP)i;
 					break;
 				}
 			}
@@ -298,6 +307,9 @@ public class GeekServer
 		{
 			// TODO 自动生成的方法存根
 			int point = 0;
+			/*
+			 * 遍历队列
+			 */
 			for(Connection c : connections){
 				if(c==null){
 					if((connections[point] = waitQueue.poll())!=null){
@@ -308,30 +320,41 @@ public class GeekServer
 					if(c.s.isClosed()){
 						c.IP.connect--;
 						connections[point] = null;
-						break;
+						continue;
 					}
+					/*
+					 * 如果有数据就读入缓冲区
+					 */
 					for(int read = 0;c.s.getInputStream().available()!=0 && read <= 1024;read++)
 					{
 						if(System.currentTimeMillis() - c.startTime >= ServerConfig.Timeout * 1000){
-							c.IP.connect--;
+							synchronized(c.IP){
+								c.IP.connect--;
+							}
 							connections[point] = null;
 							c.s.close();
 							break;
 						}
 						if(c.s.isClosed()){
-							c.IP.connect--;
+							synchronized(c.IP){
+								c.IP.connect--;
+							}
 							connections[point] = null;
 							break;
 						}
 						if(c.buffer.length() >=1024){
-							c.IP.connect--;
+							synchronized(c.IP){
+								c.IP.connect--;
+							}
 							connections[point] = null;
 							c.s.close();
 							break;
 						}
 						if(!c.tempbuffer.startsWith("Cookie: ") && !c.tempbuffer.startsWith("User-Agent: ")){
 							if(c.tempbuffer.length() >= 300){
-								c.IP.connect--;
+								synchronized(c.IP){
+									c.IP.connect--;
+								}
 								connections[point] = null;
 								c.s.close();
 								break;
@@ -343,7 +366,9 @@ public class GeekServer
 								if(!c.tempbuffer.endsWith("\r")){
 									c.s.getOutputStream().flush();
 									c.s.close();
-									c.IP.connect--;
+									synchronized(c.IP){
+										c.IP.connect--;
+									}
 									connections[point] = null;
 									break;
 								}
@@ -357,7 +382,9 @@ public class GeekServer
 									if(ServerConfig.MUST_BROWSER_CHECK){
 										if(c.check_status!=2){
 											c.s.close();
-											c.IP.connect--;
+											synchronized(c.IP){
+												c.IP.connect--;
+											}
 											connections[point] = null;
 											break;
 										}
@@ -374,7 +401,9 @@ public class GeekServer
 										c.s.getOutputStream().write(("HTTP/1.1 503 Service Unavailable\r\n"+ServerHeader+"\r\nRetry-After: 10\r\n\r\nServer busy,Please try again later.").getBytes());
 										c.s.getOutputStream().flush();
 										c.s.close();
-										c.IP.connect--;
+										synchronized(c.IP){
+											c.IP.connect--;
+										}
 										connections[point] = null;
 										break;
 									}
@@ -417,10 +446,18 @@ public class GeekServer
 				int ret = handler();
 				//System.out.println(System.currentTimeMillis() - start);
 				if(ret==0){
+					/*
+					 * 关闭
+					 */
 					con.s.close();
-					con.IP.connect--;
+					synchronized(con.IP){
+						con.IP.connect--;
+					}
 					con.header = null;
 				} else {
+					/*
+					 * 长连接
+					 */
 					con.buffer = new StringBuilder();
 					con.tempbuffer = "";
 					con.startTime = System.currentTimeMillis();
@@ -445,7 +482,9 @@ public class GeekServer
 						}
 						pw.flush();
 						con.s.close();
-						con.IP.connect--;
+						synchronized(con.IP){
+							con.IP.connect--;
+						}
 					} catch (IOException e1) {
 						// TODO 自动生成的 catch 块
 					}
@@ -617,7 +656,7 @@ public class GeekServer
 						pw.println("Wait Thread: "+waiting);
 						pw.println("Total Cache: "+AllCache.size());
 						pw.println();
-						pw.println("GeekServer/1.1");
+						pw.println(ServerHeader);
 					}
 					pw.flush();
 				} else if(uri.equals("/server-bin/about")) {
@@ -645,19 +684,7 @@ public class GeekServer
 				pw.flush();
 				return 0;
 			}
-			/*
-			 * 处理转发
-			 */
-			String url = vhost.redirect.get(uri);
-			if(url!=null){
-				pw.println("HTTP/1.1 301 Moved Permanently");
-				pw.println(ServerHeader);
-				pw.println("Location: "+url);
-				pw.println("Connection: close");
-				pw.println();
-				pw.flush();
-				return 1;
-			}
+			
 			/*
 			 * NativePage机制
 			 */
@@ -677,28 +704,62 @@ public class GeekServer
 									if(start - System.currentTimeMillis() >= 20 * 1000){
 										return error(pw,403,"Forbidden","Requset timeout!");
 									}
-									sleep(2);
+									sleep(10);
 								}
 								os.write(i1);
 							}
 						}
 					}
+					con.s.shutdownInput();
 					ByteArrayOutputStream bos = new ByteArrayOutputStream();
-					npc.create().call(new PrintWriter(bos),bos,os.toByteArray(),method , host, uri, header("User-Agant"), header("Referer"),header("Cookie"),query,vhost);
+					try{
+						npc.create().call(new PrintWriter(bos),bos,os.toByteArray(),method , host, uri, header("User-Agant"), header("Referer"),header("Cookie"),query,vhost);
+					} catch(Exception e){
+						bos.close();
+						throw e;
+					}
 					os.close();
 					os = null;
 					con.s.getOutputStream().write(bos.toByteArray());
 					con.s.getOutputStream().flush();
 					bos.close();
 					bos = null;
-					//pw.flush();
 					return 0;
 				}
 			} catch(Exception e) {
-				return error(pw,502,"Bad Gateway","There was an error in the web application.");
+				return error(pw,503,"Bad Gateway","There was an error in the web application.");
 			}
 			if(vhost.root==null || thisHost.dir==null){
 				return error(pw,404,"Not Found","The requested file does not exist!");
+			}
+			/*
+			 * 是否长连接
+			 */
+			boolean keepalive = (header("Connection")!=null && header("Connection").toLowerCase().equals("keep-alive")) && vhost.canKeepAlive && con.max>0;
+			/*
+			 * 不长连接就释放输入缓冲区
+			 */
+			if(!keepalive){
+				con.s.shutdownInput();
+			}
+			/*
+			 * 处理转发
+			 */
+			String url = vhost.redirect.get(uri);
+			if(url!=null){
+				pw.println("HTTP/1.1 301 Moved Permanently");
+				pw.println(ServerHeader);
+				pw.println("Location: "+url);
+				if(keepalive){
+					pw.println("Keep-Alive: timeout=10, max="+con.max);
+					con.max--;
+					pw.println("Connection: keep-alive");
+				} else {
+					pw.println("Connection: close");
+				}
+				pw.println();
+				pw.flush();
+				return keepalive?1:0;
 			}
 			/*
 			 * 处理文件
@@ -756,7 +817,6 @@ public class GeekServer
 			 * 生成返回头
 			 */
 			boolean useZip = false;
-			boolean keepalive = (header("Connection")!=null && header("Connection").toLowerCase().equals("keep-alive")) && vhost.canKeepAlive && con.max>0;
 			boolean writeData = !method.equals("HEAD") && f.length()>0;
 			int writeLen = 0;
 			if(method.equals("POST")){
@@ -766,9 +826,7 @@ public class GeekServer
 					keepalive = false;
 				}
 			}
-			if(!keepalive){
-				con.s.shutdownInput();
-			}
+			
 			/*
 			 * 检查是否一致
 			 */
@@ -795,12 +853,14 @@ public class GeekServer
 				}
 			}
 			if(useZip){
-				if(cache!=null){
-					writeGzipStream(bos,cache);
-				} else {
-					writeGzipStream(bos,new FileInputStream(f));
+				if(encode.equals("gzip")){
+					if(cache!=null){
+						writeGzipStream(bos,cache);
+					} else {
+						writeGzipStream(bos,new FileInputStream(f));
+					}
+					writeLen = bos.size();
 				}
-				writeLen = bos.size();
 			} else {
 				bos.close();
 				bos = null;
@@ -815,6 +875,9 @@ public class GeekServer
 			 * 生成响应头
 			 */
 			if(header("Range")!=null) {
+				/*
+				 * 断点续传
+				 */
 				int[] ranges = parseRanges(header("Range"));
 				if(ranges==null) {
 					return error(pw,416,"Requested Range Not Satisfiable","Range error!");
@@ -843,6 +906,7 @@ public class GeekServer
 				}
 				
 			}
+			pw.println("XF-Key: "+XKey);
 			pw.println(ServerHeader);
 			pw.println("Accept-Ranges: bytes");
 			pw.flush();
@@ -878,7 +942,7 @@ public class GeekServer
 			//Etag
 			pw.println("Etag: "+etag);
 			/*
-			 * 生成其他头
+			 * 生成调试头
 			 */
 			if(DEBUG){
 				if(cache!=null){
@@ -956,6 +1020,7 @@ public class GeekServer
 		 */
 		public int notModified(PrintWriter pw,String addheader,boolean keepalive){
 			pw.println("HTTP/1.1 304 Not Modified");
+			pw.println("XF-Key: "+XKey);
 			pw.println(ServerHeader);
 			if(addheader!=null){
 				pw.println(addheader);
@@ -978,13 +1043,14 @@ public class GeekServer
 	 */
 	public class IP{
 		public String address;
-		public int connect = 1;
+		public volatile int connect = 0;
 		/*
 		 * 0为未验证
 		 * 1为已发送验证
 		 * 2为已验证
 		 */
 		public int status = 0;
+		public int con10 = 0;
 	}
 	/*
 	 * 连接
@@ -1088,7 +1154,7 @@ public class GeekServer
 		pw.print(code);
 		pw.print(" ");
 		pw.println(status);
-		pw.flush();
+		pw.println("XF-Key: "+XKey);
 		pw.println(ServerHeader);
 		pw.println("Cache-Control: no-cache");
 		pw.println("Content-Length: "+ret.length());
@@ -1097,6 +1163,7 @@ public class GeekServer
 		pw.flush();
 		pw.print(ret);
 		pw.flush();
+		ret = null;
 		return 0;
 	}
 	/*
@@ -1114,7 +1181,7 @@ public class GeekServer
 	 */
 	public void writeStream(OutputStream os,InputStream is) throws Exception
 	{
-		byte[] buffer = new byte[1024 * 1024];
+		byte[] buffer = new byte[128 * 1024];
 		int i = 0;
 		for(;(i = is.read(buffer))!=-1;){
 			os.write(buffer,0,i);
@@ -1126,7 +1193,7 @@ public class GeekServer
 	 */
 	public void writeStream(OutputStream os,InputStream is,int len) throws Exception
 	{
-		byte[] buffer = new byte[1024 * 1024];
+		byte[] buffer = new byte[128 * 1024];
 		int i = 0;
 		int i1 = len;
 		for(;(i = is.read(buffer))!=-1;){

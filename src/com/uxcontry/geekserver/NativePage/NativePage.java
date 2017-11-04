@@ -17,15 +17,16 @@ import com.uxcontry.geekserver.ServerData.VirtualHost;
 import com.uxcontry.geekserver.Timer;
 
 /*
- * NativePage V1.4
+ * NativePage V1.6
  */
 
 public abstract class NativePage {
-	private static final String x_header = "X-Powered-By: NativePage/1.4";
+	private static final String x_header = "X-Powered-By: NativePage/1.6";
 	private PrintWriter pw;
 	private boolean end = false;
 	public String host,uri,referer,userAgant,cookie,method;
-	private String header = "",code = "200",status = "OK";
+	private String header = "",status = "OK";
+	private int code = 200;
 	public VirtualHost vhost;
 	public Map<String,Object> Application;
 	public SESSION SESSION;
@@ -90,6 +91,8 @@ public abstract class NativePage {
 	public final void session_destroy()
 	{
 		SESSION.clear();
+		SESSION = vhost.session.getSession(null,null,this);
+		header("Set-Cookie", "SESSION="+SESSION.id+":"+SESSION.mstr+" ;HttpOnly");
 	}
 	public final boolean empty(Object o){
 		return o==null;
@@ -204,6 +207,11 @@ public abstract class NativePage {
 				callback(obj);
 			}
 		}.init(obj), timeout + 1);
+	}
+	
+	public final void setStatus(int code,String name){
+		this.code = code;
+		this.status = name;
 	}
 	
 	public abstract void Run();
