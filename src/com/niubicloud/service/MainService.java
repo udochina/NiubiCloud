@@ -220,7 +220,7 @@ public class MainService extends ServiceImpl {
 	
 	void addRequestFromHandle(Connection conn) {
 		// System.out.println("keepalive");
-		System.out.println(conn.s.hashCode());
+		// System.out.println(conn.s.hashCode());
 		waitQueue.add(conn.reuse());
 	}
 }

@@ -1,13 +1,11 @@
 package com.niubicloud.test;
 
-import java.io.IOException;
 import java.sql.SQLException;
 
 import com.niubicloud.anno.ControllerMethod;
 import com.niubicloud.anno.RuntimeController;
 import com.niubicloud.base.Controller;
 import com.niubicloud.base.Model;
-import com.niubicloud.database.SQLBuilder;
 import com.niubicloud.database.SQLDatabase;
 import com.niubicloud.type.Request;
 import com.niubicloud.type.Respone;

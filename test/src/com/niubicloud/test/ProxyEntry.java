@@ -1,16 +1,12 @@
-package com.niubicloud;
+package com.niubicloud.test;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.util.HashMap;
+
 import com.niubicloud.base.Controller;
 import com.niubicloud.base.Hook;
-import com.niubicloud.database.SQLBuilder;
 import com.niubicloud.loader.PackageLoader;
 import com.niubicloud.loader.PathLoader;
 import com.niubicloud.service.MainService;
-import com.niubicloud.test.TestController;
-import com.niubicloud.database.SQLBuilder;
 
 public class ProxyEntry extends Hook {
 	public static void main(String args[]) {
