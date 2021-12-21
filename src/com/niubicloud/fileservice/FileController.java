@@ -25,13 +25,6 @@ public class FileController extends Controller {
 		return new StringBuilder().append('"').append(file.length()).append('v').append(file.lastModified()).append('"').toString();
 	}
 	
-	private static String getSuffixName(String path) {
-		 String fileName = path.substring(path.lastIndexOf("\\")+1);
-	     String[] strArray = fileName.split("\\.");
-	     int suffixIndex = strArray.length -1;
-	     return strArray[suffixIndex];
-	}
-	
 	@ControllerMethod(name="*", GET=true, HEAD=true)
 	public void handle(Request req,Respone resp) {
 		if(req.path.contains("../")) {
@@ -54,6 +47,7 @@ public class FileController extends Controller {
 				resp.code = 200;
 				if(Config.DEAFULT_ACCEP_REAGES)
 					resp.header("Accept-Ranges", "bytes");
+				resp.header("Content-Type",FileUtil.getMIME(FileUtil.getSuffixName(file.getAbsolutePath())));
 				String etag = makeEtag(file);
 				String ifnone = req.header("If-None-Match");
 				resp.header("Etag",etag);
@@ -64,7 +58,7 @@ public class FileController extends Controller {
 						return;
 					}
 				}
-				
+
 				try {
 					resp.finish(new FileInputStream(file), true);
 				} catch (FileNotFoundException e) {

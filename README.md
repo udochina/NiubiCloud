@@ -4,7 +4,16 @@
 
 3年磨一剑，简洁无依赖的Java Web快速开发框架
 
-原项目地址（已废弃）：https://gitee.com/uxcontry/GeekServer
+目前版本：0.1
+
+
+### 下一步开发方向
+
+·支持SSL/TLS
+
+·增加内置模板引擎
+
+·支持SESSION和Redis
 
 ### 软件架构
 本框架基于Java基础环境独立开发
