@@ -9,8 +9,10 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map.Entry;
 
+import com.niubicloud.NiubiCloud;
 import com.niubicloud.exception.UnpredictedException;
 import com.niubicloud.utils.DateUtil;
+import com.niubicloud.utils.LogUtil;
 
 public class Respone {
 	public static HashMap<String,String> StatusCode;
@@ -29,7 +31,7 @@ public class Respone {
 		StatusCode.put("403", "Forbidden");
 		StatusCode.put("404", "Not Found");
 		StatusCode.put("405", "Method Not Allowed");
-		StatusCode.put("500", "	Internal Server Error");
+		StatusCode.put("500", "Internal Server Error");
 		StatusCode.put("505", "HTTP Version not supported");
 	}
 	
@@ -60,7 +62,12 @@ public class Respone {
 				return;
 			out.writeLine(version, " ", code, " ", getStatusCode(code));
 			for(Entry<String,String> entry : headers.entrySet()) {
-				out.writeLine(entry.getKey(),": ",entry.getValue());
+				String val = entry.getValue();
+				if(val == null)
+					continue;
+				if("".equals(val))
+					continue;
+				out.writeLine(entry.getKey(),": ",val);
 			}
 			if(cookies != null)
 				for(String cookie : cookies.values()) {
@@ -139,6 +146,8 @@ public class Respone {
 	}
 	
 	public void header(String name,String value) {
+		if(isSendHeader)
+			LogUtil.warn("call 'header(key,value)' method after send header!");
 		headers.put(name, value);
 	}
 	
@@ -190,6 +199,6 @@ public class Respone {
 	}
 	
 	public void session_start() {
-		
+		// µÈ´ý¿ª·¢
 	}
 }

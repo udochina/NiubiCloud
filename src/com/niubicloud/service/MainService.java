@@ -20,6 +20,8 @@ import com.niubicloud.loader.PathLoader;
 import com.niubicloud.type.Request;
 import com.niubicloud.type.StringTable;
 
+import javax.net.ssl.SSLServerSocketFactory;
+
 public class MainService extends ServiceImpl {
 	private ServerSocket ss;
 	private int port;
@@ -62,18 +64,29 @@ public class MainService extends ServiceImpl {
 	
 	public MainService(int port) throws IOException {
 		this.port = port;
+		headers.put("Server", "NiubiCloud");
 	}
 	
 	public void start() throws IOException {
-		int i = 0;
-		
-		headers.put("Server", "NiubiCloud");
-		
 		ss = new ServerSocket(port);
 		ss.setReceiveBufferSize(AcceptThreadNum * 1000);
 		ss.setPerformancePreferences(1, 1, 2);
 		ss.setReuseAddress(true);
 		
+		initThread();
+	}
+
+	public void startSsl(SSLServerSocketFactory factory) throws IOException {
+		ss = factory.createServerSocket(port);
+		ss.setReceiveBufferSize(AcceptThreadNum * 1000);
+		ss.setPerformancePreferences(1, 1, 2);
+		ss.setReuseAddress(true);
+
+		initThread();
+	}
+
+	private void initThread() {
+		int i = 0;
 		for(; i < AcceptThreadNum ;i++) {
 			new WaitThread().start();
 		}

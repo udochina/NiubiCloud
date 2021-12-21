@@ -1,13 +1,12 @@
 package com.niubicloud.support;
 
-import java.util.HashSet;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-public class VaildateHelper {
+public class ValidateHelper {
 	Map<String,String> param;
 	
-	public VaildateHelper(Map<String,String> param) {
+	public ValidateHelper(Map<String,String> param) {
 		this.param = param;
 	}
 	

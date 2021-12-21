@@ -2,6 +2,10 @@ package com.niubicloud.type;
 
 import com.niubicloud.exception.ProtocolException;
 
+/*
+* POST数据处理
+* ！！！未完成！！！
+ */
 public class PostReader {
 	public void handlePostData(Request req) throws ProtocolException {
 		try {

@@ -2,13 +2,13 @@ package com.niubicloud.base;
 
 import java.util.Map;
 
-import com.niubicloud.support.VaildateHelper;
+import com.niubicloud.support.ValidateHelper;
 
-public abstract class Vaildate {
-	public abstract boolean execute(Map<String,String> values,VaildateHelper helper);
+public abstract class Validate {
+	public abstract boolean execute(Map<String,String> values, ValidateHelper helper);
 	
 	public boolean execute(Map<String,String> value) {
-		return this.execute(value, new VaildateHelper(value));
+		return this.execute(value, new ValidateHelper(value));
 	}
 	
 	protected boolean $$(boolean... bs) {
@@ -18,4 +18,5 @@ public abstract class Vaildate {
 		}
 		return r;
 	}
+
 }
