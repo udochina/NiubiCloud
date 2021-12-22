@@ -5,5 +5,4 @@ import java.util.HashMap;
 
 @SuppressWarnings("serial")
 public class CacheFieldTable extends HashMap<String,Field> {
-
 }

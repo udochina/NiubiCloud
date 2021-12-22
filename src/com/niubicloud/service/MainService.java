@@ -6,6 +6,8 @@ import java.lang.reflect.InvocationTargetException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Queue;
 import java.util.concurrent.ExecutorService;
@@ -23,13 +25,50 @@ import com.niubicloud.type.StringTable;
 import javax.net.ssl.SSLServerSocketFactory;
 
 public class MainService extends ServiceImpl {
-	private ServerSocket ss;
+	private ArrayList<ServerSocket> ServerSocketList = new ArrayList<ServerSocket>();
 	private int port;
 	private Queue<Connection> waitQueue = new LinkedBlockingQueue<Connection>();
 	// private ExecutorService handlerThreadPool = Executors.newFixedThreadPool(128);
 	private int AcceptThreadNum = Config.DEAFULT_ACCEPT_THREAD_NUM;
 	
 	private int keepAliveTimeout = Config.DEAFULT_KEEPALIVE_TIMEOUT,keepAliveMax = Config.DEAFULT_KEEPALIVE_MAX;
+
+	private int ReadThreadNum = Config.DEAFULT_READ_THREAD_NUM;
+
+	public PathLoader pathLoader = null;
+	public HashMap<String,BaseLoader> controllers = new HashMap<String,BaseLoader>();
+
+	public MainService() {
+		headers.put("Server", "NiubiCloud");
+	}
+
+	public void bind(int port) throws IOException {
+		ServerSocket ss = new ServerSocket(port);
+		internBind(ss);
+	}
+
+	public void bindSsl(SSLServerSocketFactory factory) throws IOException {
+		ServerSocket ss = factory.createServerSocket(port);
+		internBind(ss);
+	}
+
+	private void internBind(ServerSocket ss) throws SocketException {
+		ss.setSoTimeout(100);
+		ss.setReceiveBufferSize(AcceptThreadNum * 1000);
+		ss.setPerformancePreferences(1, 1, 2);
+		ss.setReuseAddress(true);
+		ServerSocketList.add(ss);
+	}
+
+	public void start() {
+		int i = 0;
+		for(; i < AcceptThreadNum ;i++) {
+			new WaitThread().start();
+		}
+		for(i = 0; i < ReadThreadNum ;i++) {
+			new ReadThread().start();
+		}
+	}
 	
 	public int getKeepAliveTimeout() {
 		return keepAliveTimeout;
@@ -55,44 +94,6 @@ public class MainService extends ServiceImpl {
 
 	public void setAcceptThreadNum(int acceptThreadNum) {
 		AcceptThreadNum = acceptThreadNum;
-	}
-
-	private int ReadThreadNum = Config.DEAFULT_READ_THREAD_NUM;
-	
-	public PathLoader pathLoader = null;
-	public HashMap<String,BaseLoader> controllers = new HashMap<String,BaseLoader>();
-	
-	public MainService(int port) throws IOException {
-		this.port = port;
-		headers.put("Server", "NiubiCloud");
-	}
-	
-	public void start() throws IOException {
-		ss = new ServerSocket(port);
-		ss.setReceiveBufferSize(AcceptThreadNum * 1000);
-		ss.setPerformancePreferences(1, 1, 2);
-		ss.setReuseAddress(true);
-		
-		initThread();
-	}
-
-	public void startSsl(SSLServerSocketFactory factory) throws IOException {
-		ss = factory.createServerSocket(port);
-		ss.setReceiveBufferSize(AcceptThreadNum * 1000);
-		ss.setPerformancePreferences(1, 1, 2);
-		ss.setReuseAddress(true);
-
-		initThread();
-	}
-
-	private void initThread() {
-		int i = 0;
-		for(; i < AcceptThreadNum ;i++) {
-			new WaitThread().start();
-		}
-		for(i = 0; i < ReadThreadNum ;i++) {
-			new ReadThread().start();
-		}
 	}
 	
 	public int getReadThreadNum() {
@@ -132,18 +133,20 @@ public class MainService extends ServiceImpl {
 	public class WaitThread extends Thread {
 		public void run() {
 			for(;;) {
-				try {
-					Socket s = ss.accept();
-					if(s == null)
-						continue;
-					s.setReceiveBufferSize(60 *1024);
-					s.setSendBufferSize(50 * 1024);
-					s.setSoTimeout(10);
-					waitQueue.add(new Connection(s));
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-					return;
+				for(ServerSocket ss : ServerSocketList) {
+					try {
+						Socket s = ss.accept();
+						if(s == null)
+							continue;
+						s.setReceiveBufferSize(60 *1024);
+						s.setSendBufferSize(50 * 1024);
+						s.setSoTimeout(10);
+						waitQueue.add(new Connection(s));
+					} catch(SocketTimeoutException e) {
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
 				}
 			}
 		}

@@ -20,14 +20,20 @@ public class FileController extends Controller {
 	public FileController(String baseDir) {
 		this.baseDir = baseDir;
 	}
-	
+
+	/*
+	* 基于"长度+最后修改时间"做的简单ETag
+	*/
 	private String makeEtag(File file) {
 		return new StringBuilder().append('"').append(file.length()).append('v').append(file.lastModified()).append('"').toString();
 	}
-	
+
+	/*
+	*	静态文件处理器
+	 */
 	@ControllerMethod(name="*", GET=true, HEAD=true)
 	public void handle(Request req,Respone resp) {
-		if(req.path.contains("../")) {
+		if(req.path.contains("/../")) {
 			resp.code = 403;
 			return;
 		}
@@ -39,8 +45,12 @@ public class FileController extends Controller {
 		}
 		String filePath = baseDir + path;
 		File file = new File(filePath);
-		if(file.exists() == false && req.fileName.contains(".") == false) {
-			file = new File(filePath + ".html");
+		File file1 = null;
+		if(file.exists() == false && (file1 = new File(filePath + ".html")).exists()) {
+			file = file1;
+		}
+		if(file.exists() == false && (file1 = new File(filePath + ".htm")).exists()) {
+			file = file1;
 		}
 		if(file.exists()) {
 			if(file.canRead()) {

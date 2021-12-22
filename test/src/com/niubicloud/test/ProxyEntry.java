@@ -11,9 +11,11 @@ import com.niubicloud.service.MainService;
 public class ProxyEntry extends Hook {
 	public static void main(String args[]) {
 		try {
-			MainService server = new MainService(8089);
+			MainService server = new MainService();
+
 			new PackageLoader(server,"com.niubicloud.test");
 			server.pathLoader = new PathLoader("D:\\test");
+			server.bind(8089);
 			server.start();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
