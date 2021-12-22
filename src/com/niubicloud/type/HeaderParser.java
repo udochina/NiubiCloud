@@ -3,10 +3,8 @@ package com.niubicloud.type;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 
-import com.niubicloud.NiubiCloud;
 import com.niubicloud.exception.ProtocolException;
 import com.niubicloud.exception.UnpredictedException;
-import com.niubicloud.service.MainService;
 import com.niubicloud.service.MainService.Connection;
 
 public class HeaderParser {
@@ -33,7 +31,7 @@ public class HeaderParser {
 	}
 	
 	public static void parse(Connection conn,Request req) throws ProtocolException {
-		String[] lines = conn.headerBufffer.toString().split("\r\n");
+		String[] lines = conn.headerBuffer.toString().split("\r\n");
 		int i = 0;
 		String str = lines[i++];
 		String[] item = str.split(" ");

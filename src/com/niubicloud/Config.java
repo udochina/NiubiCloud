@@ -3,7 +3,7 @@ package com.niubicloud;
 public class Config {
 	public static final int DEAFULT_READ_THREAD_NUM = 10;
 	public static final int DEAFULT_ACCEPT_THREAD_NUM = 3;
-	public static final int DEAFULT_MAX_CONNECTION_PER_THREAD = 128;
+	public static final int DEAFULT_MAX_CONNECTION_PER_THREAD = 100;
 	
 	public static final int DEAFULT_MAX_HANDLE_THREAD = 128;
 	
