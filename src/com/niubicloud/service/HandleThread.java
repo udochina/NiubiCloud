@@ -53,6 +53,7 @@ public class HandleThread extends Thread {
 	
 	public void run() {
 		main();
+		this.conn = null;
 	}
 	
 	public void main() {
@@ -69,13 +70,15 @@ public class HandleThread extends Thread {
 						//e1.printStackTrace();
 					}
 				}
+				conn.destroy();
 				return;
 			}
 			if(e instanceof UnpredictedException) {
-				if(((UnpredictedException)e).isSocketException())
+				if(((UnpredictedException)e).isSocketException()) {
+					this.conn.destroy();
 					return;
+				}
 			}
-			
 			e.printStackTrace();
 		}
 		try {
@@ -87,6 +90,7 @@ public class HandleThread extends Thread {
 				service.addRequestFromHandle(conn);
 			} else {
 				this.conn.s.close();
+				this.conn.destroy();
 			}
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
@@ -96,7 +100,7 @@ public class HandleThread extends Thread {
 	
 	private void handle() throws Exception {
 		req = new Request();
-		resp = new Respone(this.conn.s.getOutputStream());
+		resp = new Respone(this.conn.s.getOutputStream(),conn);
 		
 		try {
 			HeaderParser.parse(conn, req);

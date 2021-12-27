@@ -69,6 +69,8 @@ public class FileController extends Controller {
 					}
 				}
 
+				// resp.noDelay();
+
 				try {
 					resp.finish(new FileInputStream(file), true);
 				} catch (FileNotFoundException e) {

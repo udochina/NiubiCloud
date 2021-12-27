@@ -15,7 +15,7 @@ public class ProxyEntry extends Hook {
 
 			new PackageLoader(server,"com.niubicloud.test");
 			server.pathLoader = new PathLoader("D:\\test");
-			server.bind(8089);
+			server.bind(8081);
 			server.start();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block

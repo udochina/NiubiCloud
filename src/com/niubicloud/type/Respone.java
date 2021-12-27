@@ -1,16 +1,15 @@
 package com.niubicloud.type;
 
-import java.io.DataOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.Collection;
+import java.net.SocketException;
 import java.util.HashMap;
 import java.util.Map.Entry;
 
-import com.niubicloud.NiubiCloud;
 import com.niubicloud.exception.UnpredictedException;
+import com.niubicloud.service.MainService;
 import com.niubicloud.utils.DateUtil;
 import com.niubicloud.utils.LogUtil;
 
@@ -51,9 +50,13 @@ public class Respone {
 	private boolean isSendHeader = false;
 	private boolean isSendData = false;
 	ResponeBuffer buffer;
+
+	MainService.Connection connection;
+
 	
-	public Respone(OutputStream out) {
+	public Respone(OutputStream out, MainService.Connection conn) {
 		this.out = new ServerOutputStream(out);
+		this.connection = conn;
 	}
 	
 	public void flushHeader(){
@@ -100,7 +103,7 @@ public class Respone {
 				return;
 			}
 			
-			byte[] buff = new byte[1024];
+			byte[] buff = new byte[32 * 1024];
 			int i = 0;
 			
 			for(;(i = is.read(buff, 0, buff.length)) != -1;) {
@@ -197,7 +200,15 @@ public class Respone {
 	public void setcookie(String name,String value) {
 		setcookie(name,value,null,null,0,false,false);
 	}
-	
+
+	public void noDelay() {
+		try {
+			connection.s.setTcpNoDelay(true);
+		} catch (SocketException e) {
+			throw new UnpredictedException(e);
+		}
+	}
+
 	public void session_start() {
 		// µÈ´ý¿ª·¢
 	}

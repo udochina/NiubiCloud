@@ -46,7 +46,7 @@ public class MainService extends ServiceImpl {
 	}
 
 	private void internBind(ServerSocket ss) throws SocketException {
-		ss.setSoTimeout(100);
+		ss.setSoTimeout(0);
 		ss.setReceiveBufferSize(1000);
 		ss.setPerformancePreferences(1, 1, 2);
 		ss.setReuseAddress(true);
@@ -87,7 +87,7 @@ public class MainService extends ServiceImpl {
 	}
 
 	public class Connection {
-		Socket s;
+		public Socket s;
 		InputStream is;
 		int lastBuffer = -1;
 		public StringBuilder headerBuffer = new StringBuilder();
@@ -110,6 +110,12 @@ public class MainService extends ServiceImpl {
 			conn.conCount = this.conCount + 1;
 			return conn;
 		}
+
+		public void destroy() {
+			s = null;
+			is = null;
+			headerBuffer = null;
+		}
 	}
 	
 	public class WaitThread extends Thread {
@@ -125,9 +131,9 @@ public class MainService extends ServiceImpl {
 					Socket s = ss.accept();
 					if(s == null)
 						continue;
-					s.setReceiveBufferSize(60 *1024);
-					s.setSendBufferSize(50 * 1024);
-					s.setSoTimeout(10);
+					s.setReceiveBufferSize(128 *1024);
+					s.setSendBufferSize(128 * 1024);
+					s.setSoTimeout(1);
 					waitQueue.add(new Connection(s));
 				} catch(SocketTimeoutException e) {
 				} catch (IOException e) {
@@ -175,6 +181,7 @@ public class MainService extends ServiceImpl {
 				Connection conn = connections[point];
 				if(conn != null) {
 					if (conn.s.isClosed()) {
+						conn.destroy();
 						connections[point] = null;
 						num--;
 						continue;
@@ -195,6 +202,7 @@ public class MainService extends ServiceImpl {
 								// e1.printStackTrace();
 							}
 						}
+						conn.destroy();
 						connections[point] = null;
 						num--;
 						continue;

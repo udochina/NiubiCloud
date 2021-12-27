@@ -52,6 +52,7 @@ public class ControllerLoader extends BaseLoader {
 			if("".equals(name)) {
 				name = method.getName();
 			}
+			method.setAccessible(true);
 			mMethods.put(name, method);
 			cMethods.put(name, cMethod);
 		}
@@ -76,8 +77,6 @@ public class ControllerLoader extends BaseLoader {
 			return mod.GET();
 		} else if("POST".equals(method)) {
 			return mod.POST();
-		} else if("POST".equals(method)) {
-			return mod.POST();
 		} else if("HEAD".equals(method)) {
 			return mod.HEAD();
 		} else if("PUT".equals(method)) {
@@ -96,8 +95,12 @@ public class ControllerLoader extends BaseLoader {
 		if(rc != null) {
 			StringTable.parseFromEasyText(result.headers, rc.headers());
 		}
-		StringTable.parseFromEasyText(result.headers, mod.headers());
-		result.header("Content-Type", mod.contentType());
+		if(mod.headers().length() > 0) {
+			StringTable.parseFromEasyText(result.headers, mod.headers());
+		}
+		if(mod.contentType().length() > 0) {
+			result.header("Content-Type", mod.contentType());
+		}
 		
 		if(req.method.equals("HEAD")) {
 			result.noSendResult = true;
