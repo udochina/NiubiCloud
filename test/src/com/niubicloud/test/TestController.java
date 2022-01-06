@@ -1,6 +1,7 @@
 package com.niubicloud.test;
 
 import java.sql.SQLException;
+import java.util.List;
 
 import com.niubicloud.anno.ControllerMethod;
 import com.niubicloud.anno.RuntimeController;
@@ -20,7 +21,6 @@ public class TestController extends Controller {
 			// db.where("a","=","1");
 			db.setTabName("test1");
 			//db.where("id","=",2);
-			
 			Model[] model = db.select(TestModel.class);
 			buffer().write(model);
 			
@@ -40,5 +40,6 @@ public class TestController extends Controller {
 	@ControllerMethod(contentType="text/html; charset=utf-8",GET=true,POST=true)
 	public void hello(Request req,Respone resp) {
 		buffer().write("Hello world");
+		var classloader = ClassLoader.getSystemClassLoader();
 	}
 }
