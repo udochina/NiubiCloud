@@ -22,7 +22,10 @@ public class TestController extends Controller {
 			db.setTabName("test1");
 			//db.where("id","=",2);
 			Model[] model = db.select(TestModel.class);
-			buffer().write(model);
+			for(Model model1 : model) {
+				buffer().write(((TestModel)model1).value);
+				buffer().write("\n");
+			}
 			
 			
 		} catch (SQLException e) {
@@ -30,7 +33,7 @@ public class TestController extends Controller {
 			e.printStackTrace();
 		}
 		
-		resp.setcookie("a", "b", null, null, 3600, false, false);
+		// resp.setcookie("a", "b", null, null, 3600, false, false);
 		//buffer().write(req.path);
 		//buffer().write("Hello world");
 		

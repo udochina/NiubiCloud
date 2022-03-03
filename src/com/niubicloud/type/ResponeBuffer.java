@@ -35,6 +35,22 @@ public class ResponeBuffer{
 		}
 		return this;
 	}
+
+	public ResponeBuffer writeln(Object... args) {
+		StringBuilder sb = new StringBuilder();
+		for(Object obj : args) {
+			sb.append(obj.toString());
+		}
+		sb.append("\n");
+		try {
+			bos.write(sb.toString().getBytes("utf-8"));
+			bos.flush();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			throw new UnpredictedException(e);
+		}
+		return this;
+	}
 	
 	public ResponeBuffer writeIf(boolean val,Object... args){
 		if(val == false) {
