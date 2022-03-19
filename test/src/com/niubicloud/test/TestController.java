@@ -6,7 +6,7 @@ import com.niubicloud.base.anno.ControllerMethod;
 import com.niubicloud.base.anno.RuntimeController;
 import com.niubicloud.base.Controller;
 import com.niubicloud.base.Model;
-import com.niubicloud.service.database.SQLDatabase;
+import com.niubicloud.database.SQLDatabase;
 import com.niubicloud.service.type.Request;
 import com.niubicloud.service.type.Respone;
 

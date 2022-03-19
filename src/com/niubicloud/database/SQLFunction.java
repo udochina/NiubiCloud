@@ -1,4 +1,4 @@
-package com.niubicloud.service.database;
+package com.niubicloud.database;
 
 public enum SQLFunction {
 	uuid,
