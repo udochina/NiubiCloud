@@ -1,14 +1,11 @@
 package com.niubicloud.base;
 
-import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.util.HashMap;
 import java.util.Map;
-import com.niubicloud.anno.RuntimeController;
-import com.niubicloud.exception.FinishRequest;
+import com.niubicloud.base.anno.RuntimeController;
+import com.niubicloud.service.exception.FinishRequest;
 import com.niubicloud.service.HandleThread;
-import com.niubicloud.type.Request;
-import com.niubicloud.type.ResponeBuffer;
+import com.niubicloud.service.type.ResponeBuffer;
 
 public class Controller {
 	// private Object object = new Object();

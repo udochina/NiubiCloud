@@ -1,25 +1,19 @@
 package com.niubicloud.service;
 
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.SocketException;
 
-import com.niubicloud.Config;
-import com.niubicloud.NiubiCloud;
 import com.niubicloud.base.Hook;
-import com.niubicloud.exception.FinishRequest;
-import com.niubicloud.exception.ProtocolException;
-import com.niubicloud.exception.UnpredictedException;
-import com.niubicloud.loader.BaseLoader;
-import com.niubicloud.loader.ControllerLoader;
-import com.niubicloud.loader.PathLoader;
+import com.niubicloud.service.exception.FinishRequest;
+import com.niubicloud.service.exception.ProtocolException;
+import com.niubicloud.service.exception.UnpredictedException;
+import com.niubicloud.service.loader.BaseLoader;
+import com.niubicloud.service.loader.PathLoader;
 import com.niubicloud.service.MainService.Connection;
-import com.niubicloud.type.HeaderParser;
-import com.niubicloud.type.Request;
-import com.niubicloud.type.Respone;
-import com.niubicloud.type.ServerOutputStream;
-import com.niubicloud.utils.StringUtil;
+import com.niubicloud.service.type.HeaderParser;
+import com.niubicloud.service.type.Request;
+import com.niubicloud.service.type.Respone;
 
 public class HandleThread extends Thread {
 	public static Request currentRequest() {

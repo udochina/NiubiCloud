@@ -1,15 +1,14 @@
 package com.niubicloud.test;
 
 import java.sql.SQLException;
-import java.util.List;
 
-import com.niubicloud.anno.ControllerMethod;
-import com.niubicloud.anno.RuntimeController;
+import com.niubicloud.base.anno.ControllerMethod;
+import com.niubicloud.base.anno.RuntimeController;
 import com.niubicloud.base.Controller;
 import com.niubicloud.base.Model;
-import com.niubicloud.database.SQLDatabase;
-import com.niubicloud.type.Request;
-import com.niubicloud.type.Respone;
+import com.niubicloud.service.database.SQLDatabase;
+import com.niubicloud.service.type.Request;
+import com.niubicloud.service.type.Respone;
 
 @RuntimeController(name="api")
 public class TestController extends Controller {

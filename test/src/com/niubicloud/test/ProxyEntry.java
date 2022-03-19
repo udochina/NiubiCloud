@@ -4,8 +4,8 @@ import java.io.IOException;
 
 import com.niubicloud.base.Controller;
 import com.niubicloud.base.Hook;
-import com.niubicloud.loader.PackageLoader;
-import com.niubicloud.loader.PathLoader;
+import com.niubicloud.service.loader.PackageLoader;
+import com.niubicloud.service.loader.PathLoader;
 import com.niubicloud.service.MainService;
 
 public class ProxyEntry extends Hook {

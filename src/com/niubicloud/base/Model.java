@@ -6,22 +6,18 @@ import java.lang.reflect.Method;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.Map.Entry;
 
 import com.niubicloud.NiubiCloud;
-import com.niubicloud.anno.ModelMethod;
-import com.niubicloud.exception.ModelTypeException;
-import com.niubicloud.type.CacheFieldTable;
-import com.niubicloud.type.ValueTable;
-import com.niubicloud.utils.RefUtil;
+import com.niubicloud.base.anno.ModelMethod;
+import com.niubicloud.service.exception.ModelTypeException;
+import com.niubicloud.service.type.CacheFieldTable;
+import com.niubicloud.service.type.ValueTable;
 
 public class Model extends HashMap<String,Object> {
 	private static HashMap<Class<? extends Model>,CacheFieldTable> clazzTable = new HashMap<Class<? extends Model>,CacheFieldTable>();

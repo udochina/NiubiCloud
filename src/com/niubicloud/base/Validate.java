@@ -2,7 +2,7 @@ package com.niubicloud.base;
 
 import java.util.Map;
 
-import com.niubicloud.support.ValidateHelper;
+import com.niubicloud.service.support.ValidateHelper;
 
 public abstract class Validate {
 	public abstract boolean execute(Map<String,String> values, ValidateHelper helper);
