@@ -10,7 +10,14 @@
 
 **目前版本：0.1**
 
+### 前身
+
+NiubiCloud的前身是GeekServer，一个基于Java SE环境的独立服务器架构，没有任何依赖，独立实现了Http协议和异步处理架构。
+
+如需查看原项目，请移步到 [old-1.7](https://gitee.com/my-liankong/NiubiCloud/tree/old-1.7) 分支。
+
 ### 软件架构
+
 本框架基于Java基础环境独立开发
 
 - 不依赖于其他任何Java Web框架（没有Serlvet、Spring等）
