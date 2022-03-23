@@ -1,14 +1,14 @@
 package com.niubicloud.test;
 
-import java.sql.SQLException;
-
-import com.niubicloud.base.anno.ControllerMethod;
-import com.niubicloud.base.anno.RuntimeController;
 import com.niubicloud.base.Controller;
 import com.niubicloud.base.Model;
+import com.niubicloud.base.anno.ControllerMethod;
+import com.niubicloud.base.anno.RuntimeController;
 import com.niubicloud.database.SQLDatabase;
 import com.niubicloud.service.type.Request;
 import com.niubicloud.service.type.Respone;
+
+import java.sql.SQLException;
 
 @RuntimeController(name="api")
 public class TestController extends Controller {
@@ -16,7 +16,7 @@ public class TestController extends Controller {
 	@ControllerMethod(contentType="text/html; charset=utf-8",GET=true,POST=true)
 	public void index(Request req,Respone resp) {
 		try {
-			SQLDatabase db = new SQLDatabase("jdbc:mysql://127.0.0.1:3306/test","root","xhsw2016");
+			SQLDatabase db = new SQLDatabase("jdbc:mysql://127.0.0.1:3306/test", "root", "123456");
 			// db.where("a","=","1");
 			db.setTabName("test1");
 			//db.where("id","=",2);
