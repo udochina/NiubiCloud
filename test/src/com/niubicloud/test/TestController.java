@@ -16,7 +16,7 @@ public class TestController extends Controller {
 	@ControllerMethod(contentType="text/html; charset=utf-8",GET=true,POST=true)
 	public void index(Request req,Respone resp) {
 		try {
-			SQLDatabase db = new SQLDatabase("jdbc:mysql://127.0.0.1:3306/test", "root", "123456");
+			SQLDatabase db = new SQLDatabase("jdbc:mysql://127.0.0.1:3306/test", "root", "12345678");
 			// db.where("a","=","1");
 			db.setTabName("test1");
 			//db.where("id","=",2);
